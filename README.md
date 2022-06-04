@@ -1,2 +1,2 @@
-# tempylate **This project is WIP.**
-This project is a rewrite of miko.
+# tempylate
+This project is a rewrite of [miko](https://github.com/tasuren/miko). (**This project is WIP.**)
