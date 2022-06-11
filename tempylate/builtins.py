@@ -25,12 +25,14 @@ def include(path: str, __tempylate_cached: bool = False) -> str:
 
     Notes: Use the last modified date of the file to cache it."""
     mtime = stat(path).st_mtime
+    cached = False
     if mtime != _include_caches[path][0]:
+        cached = True
         _include_caches[path][0] = mtime
         with open(path, "r") as f:
             _include_caches[path][1] = f.read()
     if __tempylate_cached:
-        return _include_caches[path][1], True # type: ignore
+        return _include_caches[path][1], cached # type: ignore
     return _include_caches[path][1]
 
 
@@ -42,8 +44,9 @@ def aioinclude(path: str, *args: Any, **kwargs: Any) -> Coroutine[Any, Any, str]
         path: The path to a file.
         *args: Argument passed to :func:`utils.run_in_executor` following ``function``.
         **kwargs: Keyword arguments to be passed to :func:`utils.run_in_executor`."""
+    cached = kwargs.pop("__tempylate_cached", False)
     return run_in_executor(
-        lambda: include(path, kwargs.pop("__tempylate_cached", False)),
+        lambda: include(path, cached),
         *args, **kwargs
     )
 

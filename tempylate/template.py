@@ -63,7 +63,9 @@ class Template:
     Args:
         raw: The template string.
         builtins: A dictionary containing the names and values of built-in variables that can be used from the beginning at rendering time.
-        manager: Instance of the Manager class. This argument is used when creating a template from Manager and does not have to be used."""
+        manager: Instance of the Manager class. This argument is used when creating a template from Manager and does not have to be used.
+        loop: Event Loop.
+        executor: The executor to use with ``loop.run_in_executor``."""
 
     raw: str
     "Template string."
@@ -75,17 +77,22 @@ class Template:
     "A dictionary in which the functions of the block are stored."
     loop: asyncio.AbstractEventLoop | None = None
     "Event Loop."
+    executor: Any = None
+    "The executor to use with ``loop.run_in_executor``."
     prepared: bool = False
     "Whether or not :meth:`.prepare` has already been executed."
 
     def __init__(
-        self, raw: str, builtins: dict[str, Any] | None = None,
-        manager: Manager | None = None
+        self, raw: str, builtins: dict[str, Any] | None = None, manager: Manager | None = None,
+        loop: asyncio.AbstractEventLoop | None = None, executor: Any = None
     ):
         self.raw, self.builtins, self.manager = raw, builtins or {}, manager
-        self.blocks = {}
+        self.blocks, self.loop, self.executor = {}, loop, executor
         self._objects: list[str | BlockFunction] = []
         self.builtins.update(default_builtins)
+
+        if self.manager is not None:
+            self.loop, self.executor = self.manager.loop, self.manager.executor
 
     def prepare(
         self, args: Iterable[str] = (), template_name: str | None = None,
@@ -193,22 +200,26 @@ class Template:
             template_name: The name of the template.
             **kwargs: A dictionary of names and values of variables to be passed to the template."""
         if load_block_run_in_executor:
-            assert self.loop is not None
-            self.loop.run_in_executor(
-                executor, lambda: self._prepare(kwargs, template_name, True)
-            )
-        return "".join(
+            self._prepare_loop()
+            if not self.prepared:
+                assert self.loop is not None
+                if self.manager is not None:
+                    executor = self.manager.executor
+                await self.loop.run_in_executor(
+                    executor, lambda: self._prepare(kwargs, template_name, True)
+                )
+        else:
+            self._prepare(kwargs, template_name, True)
+
+        return "".join([
             obj if isinstance(obj, str) else await obj(**kwargs) or "" # type: ignore
-            for obj in self._objects
-        )
+            for obj in self._objects if not print(obj)
+        ])
 
     def _prepare_loop(self):
         # イベントループを準備します。
         if self.loop is None:
-            if self.manager is not None:
-                self.loop = self.manager.loop
-            if self.loop is None:
-                self.loop = asyncio.get_running_loop()
+            self.loop = asyncio.get_running_loop()
 
     def execute(self, block_name: str, **kwargs: Any) -> str:
         """Execute another block.
