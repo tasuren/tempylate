@@ -1,0 +1,13 @@
+<html>
+<head>
+  <title>{{ year }}</title>
+</head>
+<body>
+  CSL {{ year }}
+  <ul> {% for team in teams %}
+    <li>
+        <b>{{ team.name }}</b>: {{ team.score }}
+    </li> {% endfor %}
+  </ul>
+</body>
+</html>

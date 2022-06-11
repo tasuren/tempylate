@@ -1,6 +1,8 @@
 # tempylate - Template
 
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 from collections.abc import Iterator, Iterable
 
 from inspect import cleandoc
@@ -8,9 +10,12 @@ import ast
 
 import asyncio
 
-from .manager import Manager
 from .exceptions import LoadBlockError
+from .builtins import builtins as default_builtins
 from .types import BlockFunction
+
+if TYPE_CHECKING:
+    from .manager import Manager
 
 
 __all__ = ("extract_texts", "Template")
@@ -62,12 +67,16 @@ class Template:
 
     raw: str
     "Template string."
+    builtins: dict[str, Any]
+    "A dictionary containing variables that can be used by default in the template."
     manager: Manager | None
     "Instance of the Manager class used to create the template."
     blocks: dict[str, BlockFunction]
     "A dictionary in which the functions of the block are stored."
-    loop: asyncio.AbstractEventLoop | None
+    loop: asyncio.AbstractEventLoop | None = None
     "Event Loop."
+    prepared: bool = False
+    "Whether or not :meth:`.prepare` has already been executed."
 
     def __init__(
         self, raw: str, builtins: dict[str, Any] | None = None,
@@ -76,10 +85,10 @@ class Template:
         self.raw, self.builtins, self.manager = raw, builtins or {}, manager
         self.blocks = {}
         self._objects: list[str | BlockFunction] = []
-        self._prepared = False
+        self.builtins.update(default_builtins)
 
     def prepare(
-        self, args: Iterable[str] = (), filename: str | None = None,
+        self, args: Iterable[str] = (), template_name: str | None = None,
         async_mode: bool = False
     ) -> None:
         """Prepare a template.
@@ -88,13 +97,14 @@ class Template:
 
         Args:
             args: An iterable that returns the names of variables that can be used in a block of templates.
-            filename: The file name to be displayed in case of an error. If not specified, `"<unknown>"` is used.
+            template_name: The name to be displayed in case of an error. If not specified, `"<unknown>"` is used.
             async_mode: Whether the function of the block to be generated should be a coroutine function or not.
 
         Notes:
             This is done automatically when :meth:`.render` or :meth:`.aiorender` is executed."""
-        if self._prepared:
+        if self.prepared:
             raise LoadBlockError("The block has already been loaded.")
+        self.prepared = True
 
         # テンプレートの文字列からブロックを取り出していく。
         name = ""
@@ -102,16 +112,15 @@ class Template:
             if is_block:
                 text = cleandoc(text)
                 # ファイルから作られたテンプレートの場合は、エラー時に行が表示されるように改行を入れる。
-                if filename is None:
-                    filename = "<unknown>"
+                if template_name is None:
+                    template_name = "<unknown>"
                 else:
                     text = "{}{}".format("\n"*(first-1), text)
 
                 # ブロック名が指定されているかを確認する。
-                root = ast.parse(text, filename)
+                root = ast.parse(text, template_name)
                 for node in ast.walk(root):
-                    if isinstance(node, ast.Call):
-                        assert isinstance(node.func, ast.Name)
+                    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
                         if node.func.id != "name":
                             continue
 
@@ -140,7 +149,7 @@ class Template:
                 # 関数を生成する。
                 ast.fix_missing_locations(code)
                 namespace: dict[str, Any] = {}
-                exec(compile(code, filename, "exec"), namespace)
+                exec(compile(code, template_name, "exec"), namespace)
                 self.blocks[name] = namespace["__tempylate_function"]
                 self.blocks[name].__name__ = name
                 self._objects.append(self.blocks[name])
@@ -152,27 +161,27 @@ class Template:
         for key, value in self.builtins.items():
             kwargs.setdefault(key, value)
 
-    def _prepare(self, keys, filename, async_mode):
+    def _prepare(self, kwargs, template_name, async_mode):
         # `.prepare`が一度も実行されていない時のみ`.prepare`を実行します。
-        self._set_builtins_default(keys)
-        if not self._prepared:
-            self.prepare(keys, filename, async_mode)
+        self._set_builtins_default(kwargs)
+        if not self.prepared:
+            self.prepare(kwargs.keys(), template_name, async_mode)
 
-    def render(self, filename: str | None = None, **kwargs: Any) -> str:
+    def render(self, template_name: str | None = None, **kwargs: Any) -> str:
         """Renders the template.
 
         Args:
-            filename: The file name of the template.
+            template_name: The name of the template.
             **kwargs: A dictionary of names and values of variables to be passed to the template."""
-        self._prepare(kwargs, filename, False)
+        self._prepare(kwargs, template_name, False)
         return "".join(
             obj if isinstance(obj, str) else obj(**kwargs) or "" # type: ignore
             for obj in self._objects
         )
 
     async def aiorender(
-        self, load_block_run_in_executor: bool = True, executor: Any = None,
-        filename: str | None = None, **kwargs: Any
+        self, template_name: str | None = None, load_block_run_in_executor: bool = True,
+        executor: Any = None, **kwargs: Any
     ) -> str:
         """Asynchronous template rendering.
 
@@ -181,12 +190,12 @@ class Template:
                 If your blocks are often huge and complex, you may want to enable this.
                 This is because it may take longer to load the blocks.
             executor: Used in ``executor`` when the argument ``load_block_run_in_executor`` is ``True``.
-            filename: The file name of the template.
+            template_name: The name of the template.
             **kwargs: A dictionary of names and values of variables to be passed to the template."""
         if load_block_run_in_executor:
             assert self.loop is not None
             self.loop.run_in_executor(
-                executor, lambda: self._prepare(kwargs.keys(), filename, True)
+                executor, lambda: self._prepare(kwargs, template_name, True)
             )
         return "".join(
             obj if isinstance(obj, str) else await obj(**kwargs) or "" # type: ignore
@@ -195,10 +204,11 @@ class Template:
 
     def _prepare_loop(self):
         # イベントループを準備します。
-        if self.loop is not None:
+        if self.loop is None:
             if self.manager is not None:
-                ...
-            self.loop = asyncio.get_running_loop()
+                self.loop = self.manager.loop
+            if self.loop is None:
+                self.loop = asyncio.get_running_loop()
 
     def execute(self, block_name: str, **kwargs: Any) -> str:
         """Execute another block.
