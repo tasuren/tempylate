@@ -7,13 +7,12 @@ from html import escape
 import textwrap
 
 from collections import defaultdict
-from inspect import isfunction
 from os import stat
 
 from .utils import run_in_executor
 
 
-__all__ = ("include", "aioinclude", "escape", "textwrap", "builtins")
+__all__ = ("include", "aioinclude", "escape", "textwrap", "CS", "builtins")
 
 
 _include_caches: defaultdict[str, list] = defaultdict(lambda : [0, None])
@@ -37,18 +36,23 @@ def include(path: str, __tempylate_cached: bool = False) -> str:
 
 
 def aioinclude(path: str, *args: Any, **kwargs: Any) -> Coroutine[Any, Any, str]:
-    """This is an asynchronous version of :func:`miko.builtins.include`.  
+    """This is an asynchronous version of :func:`tempylate.builtins.include`.  
     This is using the :func:`utils.run_in_executor`.
 
     Args:
         path: The path to a file.
-        *args: Argument passed to :func:`utils.run_in_executor` following ``function``.
-        **kwargs: Keyword arguments to be passed to :func:`utils.run_in_executor`."""
+        *args: Argument passed to :func:`tempylate.utils.run_in_executor` following ``function``.
+        **kwargs: Keyword arguments to be passed to :func:`tempylate.utils.run_in_executor`."""
     cached = kwargs.pop("__tempylate_cached", False)
     return run_in_executor(
         lambda: include(path, cached),
         *args, **kwargs
     )
+
+
+CS = "^^"
+"""This is just a constant with two caret signs in it.  
+Use this when you want to use two caret signs side by side in a string defined in the Python code in the block."""
 
 
 builtins: dict[str, Callable[..., Any]] = {

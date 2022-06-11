@@ -43,7 +43,8 @@ def extract_texts(template: str) -> Iterator[tuple[tuple[int, int], bool, str]]:
                 now, block = "", not block
                 continue
             else:
-                tentative = line
+                if not block:
+                    tentative = line
                 may = True
         elif may:
             may = False
@@ -90,6 +91,7 @@ class Template:
         self.blocks, self.loop, self.executor = {}, loop, executor
         self._objects: list[str | BlockFunction] = []
         self.builtins.update(default_builtins)
+        self.builtins["self"] = self
 
         if self.manager is not None:
             self.loop, self.executor = self.manager.loop, self.manager.executor
@@ -99,16 +101,19 @@ class Template:
         async_mode: bool = False
     ) -> None:
         """Prepare a template.
-        Running this will store the blocks in the template as a function in :var:`.blocks`.
+        Running this will store the blocks in the template as a function in ``Template.blocks``.
         This can be done all at once.
 
         Args:
             args: An iterable that returns the names of variables that can be used in a block of templates.
-            template_name: The name to be displayed in case of an error. If not specified, `"<unknown>"` is used.
+            template_name: The name to be displayed in case of an error. If not specified, ``"<unknown>"`` is used.
             async_mode: Whether the function of the block to be generated should be a coroutine function or not.
 
         Notes:
-            This is done automatically when :meth:`.render` or :meth:`.aiorender` is executed."""
+            This is done automatically when :meth:`Template.render` or :meth:`Template.aiorender` is executed.
+
+        Raises:
+            LoadBlockError: Occurs when preparing fails."""
         if self.prepared:
             raise LoadBlockError("The block has already been loaded.")
         self.prepared = True
@@ -193,7 +198,7 @@ class Template:
         """Asynchronous template rendering.
 
         Args:
-            load_block_run_in_executor: Whether the block should be loaded using `loop.run_in_executor`.
+            load_block_run_in_executor: Whether the block should be loaded using ``loop.run_in_executor``.
                 If your blocks are often huge and complex, you may want to enable this.
                 This is because it may take longer to load the blocks.
             executor: Used in ``executor`` when the argument ``load_block_run_in_executor`` is ``True``.
@@ -201,7 +206,9 @@ class Template:
             **kwargs: A dictionary of names and values of variables to be passed to the template."""
         if load_block_run_in_executor:
             self._prepare_loop()
-            if not self.prepared:
+            if self.prepared:
+                self._set_builtins_default(kwargs)
+            else:
                 assert self.loop is not None
                 if self.manager is not None:
                     executor = self.manager.executor
@@ -213,7 +220,7 @@ class Template:
 
         return "".join([
             obj if isinstance(obj, str) else await obj(**kwargs) or "" # type: ignore
-            for obj in self._objects if not print(obj)
+            for obj in self._objects
         ])
 
     def _prepare_loop(self):

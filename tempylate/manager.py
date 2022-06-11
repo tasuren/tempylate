@@ -20,9 +20,9 @@ class Manager:
     Args:
         builtins: A dictionary containing the names and values of variables that are available by default in the template.
         adjustors: This function is called each time a template is rendered.
-            The function is passed an instance (``self``) of the template :class:`template.Template` and a dictionary containing the names and values of variables to pass to the template.
+            The function is passed an instance (``self``) of the template :class:`tempylate.template.Template` and a dictionary containing the names and values of variables to pass to the template.
         cls: Template class used for template rendering.
-            Defaults to :class:`template.Template`.
+            Defaults to :class:`tempylate.template.Template`.
         loop: Event loop used for asynchronous rendering.
         executor: An executor used for asynchronous rendering."""
 
@@ -53,7 +53,7 @@ class Manager:
             raw: Template string.
             template_name: The name of the template to be rendered.
                 This is the name to be assigned to the cache and must be unique for each template.
-            **kwargs: Keyword argument passed to :meth:`template.template.render`."""
+            **kwargs: Keyword argument passed to :meth:`tempylate.template.Template.render`."""
         return self._prepare_template(raw, template_name, kwargs) \
             .render(template_name, **kwargs)
 
@@ -66,8 +66,8 @@ class Manager:
             raw: Template string.
             template_name: The name of the template to be rendered.
                 This is the name to be assigned to the cache and must be unique for each template.
-            *args: Argument passed to :meth:`template.Template.aiorender`.
-            **kwargs: Keyword argument passed to :meth:`template.Template.aiorender`."""
+            *args: Argument passed to :meth:`tempylate.template.Template.aiorender`.
+            **kwargs: Keyword argument passed to :meth:`tempylate.template.Template.aiorender`."""
         return await self._prepare_template(raw, template_name, kwargs) \
             .aiorender(template_name, *args, **kwargs)
 
@@ -89,8 +89,8 @@ class Manager:
 
         Args:
             path: The path to the template file.
-            *args: Arguments passed to :meth:`builtins.aioinclude`.
-            **kwargs: Keyword argument passed to :meth`.aiorender`."""
+            *args: Arguments passed to :meth:`tempylate.builtins.aioinclude`.
+            **kwargs: Keyword argument passed to :meth:`.aiorender`."""
         aioinclude_kwargs = aioinclude_kwargs or {}
         aioinclude_kwargs.setdefault("loop", self.loop)
         aioinclude_kwargs.setdefault("executor", self.executor)

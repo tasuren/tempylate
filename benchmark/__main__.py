@@ -24,7 +24,7 @@ rstring = lambda : "".join(map(str, range(7)))
 generate_team = lambda : (Team(rstring(), randint(1, 100)) for _ in range(50))
 
 @app.get("/tempylate")
-def miko_test():
+def tempylate_test():
     return manager.render_from_file("benchmark/templates/tempylate.html", year=rstring(), teams=generate_team())
 
 @app.get("/jinja")
