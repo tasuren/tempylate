@@ -9,5 +9,6 @@ __pycache__
 build
 _build
 tempylate.egg-info
+dist
 
 test.*
