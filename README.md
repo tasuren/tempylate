@@ -49,7 +49,7 @@ You can install it using pip.
 You can view the UserGuide and API reference of tempylate [here](https://tempylate.readthedocs.io/en/latest).  
 
 ## Contributing
-Please see `./contributing.md`.
+Please see [here](https://github.com/tasuren/tempylate/blob/main/contributing.md).
 
 ## License
 tempylate is available under the MIT license.  
