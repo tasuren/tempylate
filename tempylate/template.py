@@ -29,18 +29,20 @@ def extract_texts(template: str) -> Iterator[tuple[tuple[int, int], bool, str]]:
 
     Yields:
         This is an integer indicating how many lines are the first and last of the extracted string, a boolean indicating whether it is a block, and a tuple of the body text."""
-    now, may, block, line = "", False, False, 0
+    now, may, block, line, left_new_line = "", False, False, 0, -1
     tentative = 0
     # ブロックを取得します。
     for character in template:
         if character == "\n":
             line += 1
+        if left_new_line == -1 and character not in ("\n", " ", "\t"):
+            left_new_line = line
         # tempylateのブロックかどうかを調べる。
         if character == "^":
             if may:
                 # ブロック終了時にはそのブロックを追加する。
-                yield (tentative, line), block, now[:-1]
-                now, block = "", not block
+                yield (tentative, left_new_line), block, now[:-1]
+                now, block, left_new_line = "", not block, -1
                 continue
             else:
                 if not block:
@@ -123,14 +125,14 @@ class Template:
 
         # テンプレートの文字列からブロックを取り出していく。
         name = ""
-        for index, ((first, _), is_block, text) in enumerate(extract_texts(self.raw)):
+        for index, ((first, end), is_block, text) in enumerate(extract_texts(self.raw)):
             if is_block:
-                text = cleandoc(text)
                 # ファイルから作られたテンプレートの場合は、エラー時に行が表示されるように改行を入れる。
+                text = cleandoc(text)
                 if template_name is None:
                     template_name = "<unknown>"
                 else:
-                    text = "{}{}".format("\n"*(first-1), text)
+                    text = "{}{}".format("\n" * (first + (end - first)), text)
 
                 # ブロック名が指定されているかを確認する。
                 root = ast.parse(text, template_name)
