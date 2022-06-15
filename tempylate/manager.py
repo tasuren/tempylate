@@ -1,6 +1,6 @@
 # tempylate - Manager
 
-from typing import TypeVar, Any
+from typing import Generic, TypeVar, Any
 from collections.abc import Callable, Iterable
 
 from asyncio import AbstractEventLoop
@@ -12,8 +12,8 @@ from .builtins import builtins
 __all__ = ("Manager",)
 
 
-TemplateT = TypeVar("TemplateT", bound=Template)
-class Manager:
+TemplateT = TypeVar("TemplateT", bound=Template, covariant=True)
+class Manager(Generic[TemplateT]):
     """This class manages templates.
     Rendering with it will save cache and thus improve operating speed.
 

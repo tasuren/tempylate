@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, TypeVar, Any
 from collections.abc import Iterator, Iterable
 
 from inspect import cleandoc
@@ -57,6 +57,7 @@ _FUNCTION = "def __tempylate_function(<args>): ..."
 _FUNCTION_ASYNC = f"async {_FUNCTION}"
 
 
+SelfT = TypeVar("SelfT", bound="Template")
 class Template:
     """Class for storing template strings.
     This class can be used to render templates.
@@ -84,8 +85,10 @@ class Template:
     "Whether or not :meth:`.prepare` has already been executed."
 
     def __init__(
-        self, raw: str, builtins: dict[str, Any] | None = None, manager: Manager | None = None,
-        loop: asyncio.AbstractEventLoop | None = None, executor: Any = None
+        self: SelfT, raw: str, builtins: dict[str, Any] | None = None,
+        manager: Manager[SelfT] | None = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+        executor: Any = None
     ):
         self.raw, self.builtins, self.manager = raw, builtins or {}, manager
         self.blocks, self.loop, self.executor = {}, loop, executor
@@ -176,6 +179,7 @@ class Template:
     def _prepare(self, kwargs, template_name, async_mode):
         # `.prepare`が一度も実行されていない時のみ`.prepare`を実行します。
         self._set_builtins_default(kwargs)
+        kwargs["self"] = kwargs.pop("__self__", kwargs["self"])
         if not self.prepared:
             self.prepare(kwargs.keys(), template_name, async_mode)
 
@@ -184,7 +188,9 @@ class Template:
 
         Args:
             template_name: The name of the template.
-            **kwargs: A dictionary of names and values of variables to be passed to the template."""
+            **kwargs: A dictionary of names and values of variables to be passed to the template.
+
+        Notes: If you want to use a variable named ``self`` in your template, pass the value to ``kwargs`` with the name ``__self__``."""
         self._prepare(kwargs, template_name, False)
         return "".join(
             obj if isinstance(obj, str) else obj(**kwargs) or "" # type: ignore
