@@ -1,4 +1,4 @@
-[![PyPI](https://img.shields.io/pypi/v/tempylate)](https://pypi.org/project/tempylate/) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/tempylate) ![PyPI - Downloads](https://img.shields.io/pypi/dm/tempylate) ![PyPI - License](https://img.shields.io/pypi/l/tempylate) [![Documentation Status](https://readthedocs.org/projects/tempylate/badge/?version=latest)](https://tempylate.readthedocs.io/en/latest/?badge=latest) [![Discord](https://img.shields.io/discord/777430548951728149?label=chat&logo=discord)](https://discord.gg/kfMwZUyGFG) [![Buy Me a Coffee](https://img.shields.io/badge/-tasuren-E9EEF3?label=Buy%20Me%20a%20Coffee&logo=buymeacoffee)](https://www.buymeacoffee.com/tasuren)
+[![PyPI](https://img.shields.io/pypi/v/tempylate)](https://pypi.org/project/tempylate/) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/tempylate) ![PyPI - Downloads](https://img.shields.io/pypi/dm/tempylate) ![PyPI - License](https://img.shields.io/pypi/l/tempylate) [![Documentation Status](https://readthedocs.org/projects/tempylate/badge/?version=latest)](https://tempylate.readthedocs.io/en/latest/?badge=latest) [![Buy Me a Coffee](https://img.shields.io/badge/-tasuren-E9EEF3?label=Buy%20Me%20a%20Coffee&logo=buymeacoffee)](https://www.buymeacoffee.com/tasuren)
 # tempylate
 tempylate is a pythonic template engine that is little, lightweight and fast.
 
@@ -52,5 +52,4 @@ You can view the UserGuide and API reference of tempylate [here](https://tempyla
 Please see [here](https://github.com/tasuren/tempylate/blob/main/contributing.md).
 
 ## License
-tempylate is available under the MIT license.  
-Detail: [LICENSE](https://github.com/tasuren/tempylate/blob/main/LICENSE)
+tempylate is available under the [MIT license](https://github.com/tasuren/tempylate/blob/main/LICENSE).
