@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "tempylate"
+version = "1.0.0"
+description = "Little, lightweight and fast template engine."
+authors = ["Takagi Tasuku <tasuren@outlook.jp>"]
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/tasuren/tempylate"
+documentation = "https://tempylate.readthedocs.io/"
+keywords = ["template"]
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Text Processing :: Markup :: HTML",
+    "Typing :: Typed"
+]
+package = [
+    { include = "py.typed" }
+]
+
+[tool.poetry.urls]
+Donate = "https://www.buymeacoffee.com/tasuren"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,11 +1,6 @@
 # tempylate
 
-from .template import Template
-from .manager import Manager
 
-
-__all__ = ("Template", "Manager")
-
-
-__version__ = "0.1.3"
-__author__ = "tasuren"
+__author__ = "Takagi Tasuku"
+__copyright__ = "(c) 2022 Takagi Tasuku"
+__version__ = "1.0.0"
